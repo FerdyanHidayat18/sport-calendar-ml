@@ -6,19 +6,29 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 import joblib
+import os
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, classification_report
+from sklearn.utils.class_weight import compute_class_weight
 
 from xgboost import XGBClassifier
+
+# ======================================================
+# CEK WORKING DIRECTORY
+# ======================================================
+
+print("Current directory:", os.getcwd())
 
 # ======================================================
 # LOAD DATA
 # ======================================================
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-data_path = BASE_DIR / "data" / "matches.xlsx"
+data_path = Path("data/matches.xlsx")
+
+if not data_path.exists():
+    raise FileNotFoundError("Dataset tidak ditemukan di data/matches.xlsx")
 
 df = pd.read_excel(data_path)
 
@@ -82,6 +92,9 @@ df["match_priority_level"] = (
     .str.lower()
 )
 
+print("\nUnique target values:")
+print(df["match_priority_level"].unique())
+
 priority_map = {
     "low":0,
     "medium":1,
@@ -99,15 +112,16 @@ print(df["match_priority_level"].value_counts())
 # ENCODING CATEGORICAL FEATURE
 # ======================================================
 
-cat_cols = df.select_dtypes(include="object").columns
+encoders = {}
 
-label_encoders = {}
+cat_cols = df.select_dtypes(include="object").columns
 
 for col in cat_cols:
 
     le = LabelEncoder()
     df[col] = le.fit_transform(df[col].astype(str))
-    label_encoders[col] = le
+
+    encoders[col] = le
 
 # ======================================================
 # SPLIT FEATURE & TARGET
@@ -132,7 +146,24 @@ print("\nTrain shape:", X_train.shape)
 print("Test shape:", X_test.shape)
 
 # ======================================================
-# MODEL
+# CLASS WEIGHT
+# ======================================================
+
+classes = np.unique(y_train)
+
+weights = compute_class_weight(
+    class_weight="balanced",
+    classes=classes,
+    y=y_train
+)
+
+class_weights = dict(zip(classes, weights))
+
+print("\nClass Weights:")
+print(class_weights)
+
+# ======================================================
+# TRAIN MODEL
 # ======================================================
 
 xgb_model = XGBClassifier(
@@ -148,25 +179,23 @@ xgb_model = XGBClassifier(
 xgb_model.fit(X_train, y_train)
 
 # ======================================================
-# EVALUATION
+# EVALUASI MODEL
 # ======================================================
 
-xgb_pred = xgb_model.predict(X_test)
+pred = xgb_model.predict(X_test)
 
 print("\n===== XGBOOST =====")
 
-print("Accuracy:", accuracy_score(y_test, xgb_pred))
-print(classification_report(y_test, xgb_pred))
+print("Accuracy:", accuracy_score(y_test, pred))
+print(classification_report(y_test, pred))
 
 # ======================================================
-# SAVE MODEL
+# SIMPAN MODEL
 # ======================================================
 
-model_dir = BASE_DIR / "models"
-model_dir.mkdir(exist_ok=True)
+Path("models").mkdir(exist_ok=True)
 
-joblib.dump(xgb_model, model_dir / "xgb_model.pkl")
-joblib.dump(X.columns.tolist(), model_dir / "features.pkl")
-joblib.dump(label_encoders, model_dir / "encoders.pkl")
+joblib.dump(xgb_model, "models/xgb_model.pkl")
+joblib.dump(encoders, "models/encoders.pkl")
 
-print("\nModel berhasil disimpan")
+print("\nModel berhasil disimpan di folder models/")
