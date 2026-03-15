@@ -5,24 +5,47 @@ import joblib
 # load model
 model = joblib.load("models/xgb_model.pkl")
 
-st.title("Football Match Priority Prediction")
+st.set_page_config(page_title="Football Match Priority", layout="centered")
 
-st.write("Predict match priority level")
+st.title("⚽ Football Match Priority Prediction")
 
-match_duration = st.number_input("Match Duration")
+st.markdown("Predict how important a football match is based on match schedule.")
 
-match_hour = st.slider("Match Hour",0,23)
+st.divider()
 
-match_day = st.slider("Match Day (0=Monday)",0,6)
+# TEAM INPUT
+col1, col2 = st.columns(2)
 
-match_month = st.slider("Match Month",1,12)
+with col1:
+    team_home = st.text_input("🏠 Home Team")
 
-is_weekend = st.selectbox("Is Weekend",[0,1])
+with col2:
+    team_away = st.text_input("✈️ Away Team")
 
-is_prime_time = st.selectbox("Prime Time",[0,1])
+st.divider()
+
+# MATCH INFO
+match_duration = st.number_input("Match Duration (minutes)", value=90)
+
+match_hour = st.slider("Kick Off Hour", 0, 23)
+
+match_day = st.slider("Day of Week (0=Monday)", 0, 6)
+
+match_month = st.slider("Month", 1, 12)
+
+col3, col4 = st.columns(2)
+
+with col3:
+    is_weekend = st.selectbox("Weekend Match?", [0,1])
+
+with col4:
+    is_prime_time = st.selectbox("Prime Time Match?", [0,1])
 
 
-if st.button("Predict"):
+st.divider()
+
+# PREDICT
+if st.button("🔎 Predict Match Priority"):
 
     data = pd.DataFrame({
         "match_duration":[match_duration],
@@ -41,4 +64,4 @@ if st.button("Predict"):
         2:"High"
     }
 
-    st.success(f"Prediction: {label_map[pred]}")
+    st.success(f"Match Priority Prediction: **{label_map[pred]}**")
