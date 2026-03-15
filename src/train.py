@@ -106,9 +106,7 @@ label_encoders = {}
 for col in cat_cols:
 
     le = LabelEncoder()
-
     df[col] = le.fit_transform(df[col].astype(str))
-
     label_encoders[col] = le
 
 # ======================================================
@@ -134,7 +132,7 @@ print("\nTrain shape:", X_train.shape)
 print("Test shape:", X_test.shape)
 
 # ======================================================
-# MODEL XGBOOST
+# MODEL
 # ======================================================
 
 xgb_model = XGBClassifier(
@@ -150,7 +148,7 @@ xgb_model = XGBClassifier(
 xgb_model.fit(X_train, y_train)
 
 # ======================================================
-# PREDICTION
+# EVALUATION
 # ======================================================
 
 xgb_pred = xgb_model.predict(X_test)
@@ -164,11 +162,11 @@ print(classification_report(y_test, xgb_pred))
 # SAVE MODEL
 # ======================================================
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
 model_dir = BASE_DIR / "models"
 model_dir.mkdir(exist_ok=True)
 
 joblib.dump(xgb_model, model_dir / "xgb_model.pkl")
+joblib.dump(X.columns.tolist(), model_dir / "features.pkl")
+joblib.dump(label_encoders, model_dir / "encoders.pkl")
 
-print("\nModel berhasil disimpan di", model_dir / "xgb_model.pkl")
+print("\nModel berhasil disimpan")
